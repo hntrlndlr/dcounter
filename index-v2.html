@@ -30,7 +30,9 @@ input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid
 .row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
 .row:last-child{border:0}
 .row>span{flex:1;min-width:0}
-.row input[type=datetime-local]{width:auto;flex:0 0 auto;font-size:14px;min-height:40px}
+.row input[type=datetime-local]{width:auto;flex:1 1 auto;min-width:0;font-size:13px;min-height:40px;padding:6px 8px}
+.row .nm{flex:none}.row .nm small{white-space:nowrap}
+.hl{margin-top:12px}
 .row button{min-height:40px;padding:6px 12px}
 .when{display:flex;gap:8px;margin-bottom:12px}
 .dr{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 18px;margin-bottom:8px}
@@ -74,8 +76,8 @@ details.card[open]{padding-bottom:14px}
 .sb{padding-bottom:18px}
 .sec .card{background:var(--bg)}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border-radius:22px;overflow:hidden;margin:0 0 12px}
-.stats .card{border-radius:0;padding:14px 18px}
-.stats b{display:block;font-size:26px;font-weight:800}
+.stats .card{border-radius:0;padding:10px 16px}
+.stats b{display:block;font-size:22px;font-weight:800}
 .lab{display:block;margin-bottom:12px}.lab>span{display:block;font-size:13px;color:var(--mut);margin-bottom:4px}
 .cfg{display:grid;grid-template-columns:1fr 70px 70px 44px;gap:6px;margin-bottom:8px;align-items:center}
 .cfg button{padding:0}
@@ -102,7 +104,7 @@ let S={},mig=false;try{S=JSON.parse(localStorage.getItem(K))||{};if(!Object.keys
 S=Object.assign(JSON.parse(JSON.stringify(DEF)),S);S.settings=Object.assign({},DEF.settings,S.settings);S.evening=Object.assign({},DEF.evening,S.evening);
 const save=()=>{try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}};
 if(mig){if(S.settings.deficit===10)S.settings.deficit=0;save()}
-let tab='drinks',whenVal=null;const OPEN={};
+let tab='drinks',whenVal=null,whenOpen=false;const OPEN={};
 
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const f1=n=>String(+(+n).toFixed(1)).replace('.',',');
@@ -161,11 +163,11 @@ function health(){
 }
 const bar=(v,lim)=>`<div class="bar" role="img" aria-label="${Math.round(v)} von ${lim} Gramm"><i style="width:${Math.min(100,v/lim*100)}%;background:${v>=lim?'var(--bad)':'var(--ink)'}"></i></div>`;
 function healthHtml(){
-  const h=health();
-  return `<h2>Gesundheit</h2><div class="card">
+  const h=health(),over=h.gEve>=h.binge||h.wk>h.week;
+  return `<details class="card hl"${OPEN.health?' open':''} ontoggle="OPEN.health=this.open"><summary><span><b>Gesundheit</b><br><small${over?' style="color:var(--bad)"':''}>Heute ${Math.round(h.gEve)} von ${h.binge} g · Woche ${Math.round(h.wk)} von ${h.week} g</small></span></summary>
   <div class="row"><span>Heute Abend<br><small>${Math.round(h.gEve)} g reiner Alkohol, Rauschtrinken ab ${h.binge} g</small></span><b>${h.gEve>=h.binge?'darüber':'darunter'}</b></div>${bar(h.gEve,h.binge)}
   <div class="row"><span>Letzte 7 Tage<br><small>${Math.round(h.wk)} g, Obergrenze ${h.week} g pro Woche</small></span><b>${h.wk>h.week?'darüber':'darunter'}</b></div>${bar(h.wk,h.week)}
-  <small>${h.nights} Abende mit Alkohol in 7 Tagen. Es gibt keine Menge ohne Risiko: Das Krebsrisiko steigt mit jedem Glas. Die Grenzen sind Obergrenzen, keine Ziele.</small></div>`;
+  <small>${h.nights} Abende mit Alkohol in 7 Tagen. Es gibt keine Menge ohne Risiko: Das Krebsrisiko steigt mit jedem Glas. Die Grenzen sind Obergrenzen, keine Ziele.</small></details>`;
 }
 function noticesHtml(){
   const h=health();let o='';
@@ -248,14 +250,14 @@ function pDrinks(){
   const waterBox=`<div class="card water${on&&open?' due':''}"><span class="wt"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s6 6.2 6 10.5a6 6 0 0 1-12 0C6 9.2 12 3 12 3z"/></svg><span>${on&&open?`<b>Zeit für ein Glas Wasser.</b> Noch ${open} offen.`:`Wasser: <b>${W}</b> Glas${D?` zu ${D} Drinks`:''}`}</span></span><span class="wb"><button onclick="remW()" aria-label="Eines weniger"${W?'':' disabled'}>−</button><button class="pri" onclick="addW()">Getrunken</button></span></div>`;
   const lm=S.marks[S.marks.length-1];
   const markBox=`<div class="card mk"><div><b>Wie fühlt es sich an?</b><small>${lm?`Zuletzt: ${lm.k==='good'?'perfekt':'zu viel'} bei ${f2(lm.v)} ‰, ${dt(lm.ts)} Uhr`:'Für deinen persönlichen Bereich'}</small></div><div class="mkb"><button onclick="mark('good')"${D?'':' disabled'}>Gerade perfekt</button><button onclick="mark('much')"${D?'':' disabled'}>Zu viel</button></div>${lm?'<button class="lnk" onclick="unmark()">Letzten Eintrag zurücknehmen</button>':''}</div>`;
-  const list=[...S.drinks].sort((a,b)=>b.ts-a.ts).map(d=>`<div class="row"><span>${esc(d.name)}<br><small>${f1(d.ml)} ml, ${f1(d.abv)} %</small></span>
+  const whenBox=(whenVal||whenOpen)?`<label class="mut" for="when">Zeitpunkt (wann ausgetrunken)</label><div class="when"><input id="when" type="datetime-local" value="${whenVal||toLocal(Date.now())}" onchange="whenVal=this.value"><button onclick="whenVal=null;whenOpen=false;render()">Jetzt</button></div>`:`<p class="mut" style="margin:4px 0 12px">Ein Eintrag zählt als „jetzt“. <button class="lnk" onclick="whenOpen=true;render()">Zeit ändern</button></p>`;
+  const list=[...S.drinks].sort((a,b)=>b.ts-a.ts).map(d=>`<div class="row"><span class="nm">${esc(d.name)}<br><small>${f1(d.ml)} ml, ${f1(d.abv)} %</small></span>
     <input type="datetime-local" value="${toLocal(d.ts)}" onchange="setTs('${d.id}',this.value)"><button class="bad" onclick="del('${d.id}')" aria-label="Löschen">✕</button></div>`).join('')||'<p class="mut">Noch nichts eingetragen. Tippe oben auf + .</p>';
   return `<h1>Drinks</h1>
-  <div id="stopbox">${stopHtml()}</div>${noticesHtml()}${waterBox}${markBox}<label class="mut" for="when">Zeitpunkt (wann ausgetrunken)</label>
-  <div class="when"><input id="when" type="datetime-local" value="${whenVal||toLocal(Date.now())}" onchange="whenVal=this.value"><button onclick="whenVal=null;render()">Jetzt</button></div>
-  <div>${cards}</div>
+  <div id="stopbox">${stopHtml()}</div>${noticesHtml()}
+  <div>${cards}</div>${whenBox}${D?waterBox+markBox:''}
   <h2>Einträge</h2><div class="card">${list}</div>
-  <p style="display:flex;gap:8px;flex-wrap:wrap"><button class="pri" onclick="newNight(true)">Abend abschließen und speichern</button><button class="bad" onclick="newNight(false)">Verwerfen</button></p>`;
+  ${D?'<p style="display:flex;gap:8px;flex-wrap:wrap"><button class="pri" onclick="newNight(true)">Abend abschließen und speichern</button><button class="bad" onclick="newNight(false)">Verwerfen</button></p>':''}`;
 }
 
 function pStats(){
@@ -272,7 +274,7 @@ function pStats(){
   const byH=Object.entries(by).map(([n,c])=>`<div class="row"><span>${esc(n)}</span><b>${c}</b></div>`).join('')||'<p class="mut">Noch keine Drinks.</p>';
   const G=S.marks.filter(m=>m.k==='good'),B=S.marks.filter(m=>m.k==='much'),mg=med(G),mb=med(B);
   const sug=B.length>=3?Math.max(0.1,Math.round((mb-0.1)*20)/20):null;
-  const pers=`<h2>Dein persönlicher Bereich</h2><div class="card">${(G.length||B.length)?`<div class="row"><span>Gerade perfekt<br><small>${G.length} Mal markiert</small></span><b>${mg!=null?f2(mg)+' ‰':'–'}</b></div><div class="row"><span>Zu viel<br><small>${B.length} Mal markiert</small></span><b>${mb!=null?f2(mb)+' ‰':'–'}</b></div>
+  const pers=`<div>${(G.length||B.length)?`<div class="row"><span>Gerade perfekt<br><small>${G.length} Mal markiert</small></span><b>${mg!=null?f2(mg)+' ‰':'–'}</b></div><div class="row"><span>Zu viel<br><small>${B.length} Mal markiert</small></span><b>${mb!=null?f2(mb)+' ‰':'–'}</b></div>
     ${sug!=null?`<p class="mut">Vorschlag für dein Ziel: ${f2(sug)} ‰. Das ist der mittlere „Zu viel“-Wert minus 0,1 ‰, weil der Alkohol nach dem letzten Drink noch steigt.</p>${Math.abs(sug-s.target)>0.001?`<button onclick="setS('target','${sug}',true)">Ziel auf ${f2(sug)} ‰ setzen</button>`:'<small>Dein Ziel entspricht dem Vorschlag.</small>'}`:'<p class="mut">Ab 3 Markierungen „Zu viel“ gibt es einen Vorschlag für dein Ziel.</p>'}`:'<p class="mut">Tippe unter Drinks auf „Gerade perfekt“ oder „Zu viel“. Nach ein paar Abenden siehst du hier deinen Bereich.</p>'}</div>`;
   let chart='';
   if(pts.length){
@@ -297,18 +299,15 @@ function pStats(){
     <div class="rl"><i style="left:${pct}%"></i><div class="rs"><div style="flex:25 1 0;background:var(--ok)"></div><div style="flex:16.7 1 0;background:var(--yel)"></div><div style="flex:25 1 0;background:var(--ora)"></div><div style="flex:33.3 1 0;background:var(--bad)"></div></div>
     <div class="rt"><span style="left:0;transform:none">0</span><span style="left:25%">0,3</span><span style="left:41.7%">0,5</span><span style="left:66.7%">0,8</span><span style="right:0;transform:none">1,2</span></div></div></section>
   <div class="stats">
-    <div class="card"><b>${S.drinks.length}</b><small>Drinks</small></div>
-    <div class="card"><b>${Math.round(g)} g</b><small>reiner Alkohol</small></div>
-    <div class="card"><b>${f2(peak)} ‰</b><small>Höchstwert${peak>0?` um ${hm(pk.t)} Uhr${pk.t>now?' (erwartet)':''}`:''}</small></div>
-    <div class="card"><b>${sober?hm(sober)+' Uhr':'–'}</b><small>voraussichtlich nüchtern</small></div>
-    <div class="card" style="grid-column:1/-1"><b>${S.water.length} Glas Wasser</b><small>bei ${S.drinks.length} Drinks. Wasser ändert den Promillewert nicht.</small></div>
-  </div>${healthHtml()}${chart}
-  ${pers}
-  <h2>Pro Getränk</h2><div class="card">${byH}</div>
-  <h2>Zonen</h2><div class="card">${ZONES.map(q=>`<div class="row"><span class="dot" style="color:var(${q.c})">●</span><span><b>${q.n}</b><br><small>${q.r}</small></span></div>`).join('')}
-  <small>Orientierungswerte aus Quellen wie ADAC und AOK. Die Wirkung ist individuell verschieden.</small></div>
-  <div class="note">Das ist nur eine Schätzung nach Widmark mit Unsicherheit. Essen, Trinktempo, Gesundheit und Tagesform ändern den echten Wert. Nicht für Fahrentscheidungen verwenden: Auch ein niedriger Wert sagt nichts über deine Fahrtüchtigkeit.</div>`;
+    <div class="card"><b>${S.drinks.length}</b><small>Drinks, ${Math.round(g)} g Alkohol</small></div>
+    <div class="card"><b>${f2(peak)} ‰</b><small>Höchstwert${peak>0?` um ${hm(pk.t)}${pk.t>now?' (erwartet)':''}`:''}</small></div>
+    <div class="card"><b>${sober?hm(sober):'–'}</b><small>voraussichtlich nüchtern</small></div>
+    <div class="card"><b>${S.water.length} Glas</b><small>Wasser, ändert den Wert nicht</small></div>
+  </div>${chart}${healthHtml()}
+  ${sec('pers','Dein persönlicher Bereich',pers,(G.length||B.length)?`${G.length} Mal perfekt, ${B.length} Mal zu viel`:'Noch keine Markierungen')}
+  ${sec('more','Pro Getränk und Zonen','<h2 style="margin-top:0">Pro Getränk</h2>'+byH+'<h2>Zonen</h2>'+ZONES.map(q=>`<div class="row"><span class="dot" style="color:var(${q.c})">●</span><span><b>${q.n}</b><br><small>${q.r}</small></span></div>`).join('')+'<small>Orientierungswerte aus Quellen wie ADAC und AOK. Die Wirkung ist individuell verschieden.</small>','Verteilung nach Getränk, Wirkung nach Wert')}`;
 }
+const NOTE=`<div class="note">Das ist nur eine Schätzung nach Widmark mit Unsicherheit. Essen, Trinktempo, Gesundheit und Tagesform ändern den echten Wert. Nicht für Fahrentscheidungen verwenden: Auch ein niedriger Wert sagt nichts über deine Fahrtüchtigkeit.</div>`;
 
 function pLog(){
   const L=[...S.log].sort((a,b)=>b.ts-a.ts),now=Date.now();
@@ -360,20 +359,25 @@ function pSettings(){
   const num=(k,l,st)=>`<label class="lab"><span>${l}</span><input type="number" inputmode="decimal" step="${st||1}" value="${s[k]}" onchange="setS('${k}',this.value,true)"></label>`;
   return `<label class="lab"><span>Geschlecht</span><select onchange="setS('sex',this.value)"><option value="m"${s.sex==='m'?' selected':''}>Männlich</option><option value="f"${s.sex==='f'?' selected':''}>Weiblich</option></select></label>
   ${num('age','Alter (Jahre, nur für Watson)')}${num('height','Größe (cm)')}${num('weight','Gewicht (kg)',0.5)}
-  <label class="lab"><span>Formel für den Verteilungsfaktor r</span><select onchange="setS('formula',this.value)">
+  <label class="lab"><span>Wasser-Erinnerung nach jedem Drink</span><select onchange="setS('waterRemind',this.value==='1')"><option value="1"${s.waterRemind?' selected':''}>An</option><option value="0"${s.waterRemind?'':' selected'}>Aus</option></select></label>
+  ${num('target','Persönlicher Zielwert (‰, 0 = aus). Kein Wert ist risikofrei.',0.05)}`;
+}
+function pAdv(){
+  const s=S.settings,r=rF(s);
+  const num=(k,l,st)=>`<label class="lab"><span>${l}</span><input type="number" inputmode="decimal" step="${st||1}" value="${s[k]}" onchange="setS('${k}',this.value,true)"></label>`;
+  return `<label class="lab"><span>Formel für den Verteilungsfaktor r</span><select onchange="setS('formula',this.value)">
     <option value="seidl"${s.formula==='seidl'?' selected':''}>Seidl &amp; Alt (Gewicht, Größe)</option>
     <option value="watson"${s.formula==='watson'?' selected':''}>Watson (inkl. Alter)</option>
     <option value="pauschal"${s.formula==='pauschal'?' selected':''}>Pauschal (0,68 / 0,55)</option></select></label>
-  <label class="lab"><span>Wasser-Erinnerung nach jedem Drink</span><select onchange="setS('waterRemind',this.value==='1')"><option value="1"${s.waterRemind?' selected':''}>An</option><option value="0"${s.waterRemind?'':' selected'}>Aus</option></select></label>
   <p class="mut">Aktueller Faktor r: ${r>0?f2(r):'–'}</p>
-  ${num('beta','Abbau (‰ pro Stunde)',0.01)}${num('target','Persönlicher Zielwert (‰, 0 = aus). Kein Wert ist risikofrei.',0.05)}${num('deficit','Resorptionsdefizit (%)')}${num('absorb','Aufnahmedauer ins Blut (Minuten)')}
-  <small class="mut">Die Aufnahmedauer gilt für „Kleiner Snack“ und wird im Bereich „Abend“ (Reiter Drinks) je nach Essen angepasst. Gängige Werte: Abbau 0,1 bis 0,15 ‰/h (0,1 ist die vorsichtige Annahme), Resorptionsdefizit: Gerichte rechnen oft mit etwa 10 %, was den Wert senkt. Hier sind 0 % voreingestellt, damit die Schätzung eher zu hoch als zu niedrig ist. Aufnahmedauer: 20 bis 120 Minuten nach Trinkende, 30 ist ein Mittelwert (Sekt, Alkohol auf nüchternen Magen: kürzer; viel Essen: länger).</small>
-  <h2>Daten</h2>
+  ${num('beta','Abbau (‰ pro Stunde)',0.01)}${num('deficit','Resorptionsdefizit (%)')}${num('absorb','Aufnahmedauer ins Blut (Minuten)')}
+  <small class="mut">Die Aufnahmedauer gilt für „Kleiner Snack“ und wird im Bereich „Abend“ (Reiter Drinks) je nach Essen angepasst. Gängige Werte: Abbau 0,1 bis 0,15 ‰/h (0,1 ist die vorsichtige Annahme), Resorptionsdefizit: Gerichte rechnen oft mit etwa 10 %, was den Wert senkt. Hier sind 0 % voreingestellt, damit die Schätzung eher zu hoch als zu niedrig ist. Aufnahmedauer: 20 bis 120 Minuten nach Trinkende, 30 ist ein Mittelwert (Sekt, Alkohol auf nüchternen Magen: kürzer; viel Essen: länger).</small>`;
+}
+function pData(){return `
   <p>Alles liegt nur in diesem Browser. Wenn du die Browserdaten löschst, ist es weg.</p>
   <p><button onclick="exp()">Backup speichern</button></p>
   <p><label class="mut">Backup laden<input type="file" accept="application/json" onchange="imp(this)"></label></p>
-  <p><button class="bad" onclick="wipe()">Alle Daten löschen</button></p>`;
-}
+  <p><button class="bad" onclick="wipe()">Alle Daten löschen</button></p>`}
 
 const SRC=[
 ['Formel','Widmark mit individuellem Verteilungsfaktor nach Seidl und Alt (Gewicht, Größe). Genauer als starre Faktoren und als Watson oder Ulrich, laut den Autoren.','belegt','https://link.springer.com/article/10.1007/s004140000154','Seidl et al. 2000'],
@@ -392,9 +396,9 @@ function pSources(){
 }
 const sec=(k,t,b,sub)=>`<details class="card sec"${OPEN[k]?' open':''} ontoggle="OPEN['${k}']=this.open"><summary><span><b>${t}</b><br><small>${sub}</small></span></summary><div class="sb">${b}</div></details>`;
 const PAGES={
-  stats:()=>pStats()+sec('log','Protokoll',pLog(),`${S.log.length} Abende gespeichert`),
-  drinks:()=>pDrinks()+sec('evening','Abend',pEvening(),S.evening.end?`Ende ${hm(S.evening.end)} Uhr`:'Start, Ende und Essen'),
-  settings:()=>'<h1>Einstellungen</h1>'+sec('config','Getränke',pConfig(),`${S.types.length} Sorten`)+sec('profile','Profil',pSettings(),'Daten für die Promille-Berechnung')+sec('sources','Quellen und Annahmen',pSources(),'Was belegt ist und was Annahme')
+  stats:()=>pStats()+sec('log','Protokoll',pLog(),`${S.log.length} Abende gespeichert`)+NOTE,
+  drinks:()=>pDrinks()+sec('evening','Abend',pEvening(),[S.evening.start?'Start '+hm(S.evening.start):'',S.evening.end?'Ende '+hm(S.evening.end):'',['nüchtern','Snack','volle Mahlzeit'][S.evening.food]].filter((x,i)=>x&&(i<2||S.evening.start||S.evening.end)).join(', ')||'Start, Ende und Essen'),
+  settings:()=>'<h1>Einstellungen</h1>'+sec('profile','Profil',pSettings(),'Geschlecht, Alter, Größe, Gewicht, Ziel')+sec('config','Getränke',pConfig(),`${S.types.length} Sorten`)+sec('adv','Erweitert',pAdv(),'Formel, Abbau, Aufnahme')+sec('data','Backup und Daten',pData(),'Sichern, laden, löschen')+sec('sources','Quellen und Annahmen',pSources(),'Was belegt ist und was Annahme')
 };
 function render(){
   const y=scrollY;
